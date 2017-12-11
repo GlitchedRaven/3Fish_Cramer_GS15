@@ -16,11 +16,13 @@ tweaks[1] = bytearray(b'\x60\x6c\x16\x69\x0a\xca\xf9\xc6')
 
 
 
-file = 'C:\\Users\\Arle\\Desktop\\GS15\\GS15_devoir1_arithmetique.pdf'
+file = 'C:\\Users\\Arle\\Desktop\\GS15\\test.txt'
 
 from functools import reduce
 from collections import deque
 from bitstring import BitArray
+from itertools import chain
+
 def read_file_as_bits(filename): # On l'implementera peut-etre sous forme de flux, à voir
     
     with open(filename, "rb") as binary_file:
@@ -33,7 +35,13 @@ def read_file_as_bits(filename): # On l'implementera peut-etre sous forme de flu
         couple_bytes = binary_file.read(2)
         print(couple_bytes)
         """
-        
+def write_file_from_bytes(f, path):
+    # Open a file
+    fo = open("C:\\Users\\Arle\\Desktop\\GS15\\"+path, "wb")
+    for m in f:fo.write(m)
+    # Close opend file
+    fo.close()
+
 def bitstring_to_bytes(s):
     return int(s, 2).to_bytes(len(s) // 8, byteorder='big')
 
@@ -62,7 +70,7 @@ def substraction_nocarry(a,b):
     for byte1, byte2 in zip(a,b):
         byte_res = (byte1-byte2-carry)
         #print(byte_res)
-        if byte_res > 255:
+        if byte_res < 0:
             carry = 1
             result.append(byte_res%256)
         else:
@@ -126,7 +134,7 @@ def tournee_threefish(M, N):
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mix(M[2*p], M[2*p+1], 4)
     #Permutation
-    M = perm_primitive_test(M)
+    #M = perm_primitive_test(M)
     return(M)
 
 def tournee_threefish_inv(M, N):      
@@ -134,7 +142,7 @@ def tournee_threefish_inv(M, N):
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mixinv(M[2*p], M[2*p+1], 4)
     #Permutation
-    M = perm_primitive_test(M)
+    #M = perm_primitive_test(M)
     return(M)    
     
 def cut_as_words(M, l=8):
@@ -155,7 +163,7 @@ def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
     for m in range(0,(len(plaintext)*8)//block_len):
         cutBlock = cutPlain[N*m:N*(m+1)]
         for i in range(0,76):
-            if (i%4 == 0):
+            if (i%4 == 0) or (i == 75):
                 k = key_generation(K, tweaks, N, i)
                 for j in range(0, N):
                     cutBlock[j] = byte_xor(cutBlock[j], k[j])
@@ -177,12 +185,12 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
         cutBlock = cutCypher[N*m:N*(m+1)]
         for l in range(0,76):
             i = 75 - l
-            if (i%4 == 0):
+            if (i%4 == 0) or (i == 75):
                 k = keys[i]
                 for j in range(0, N):
                     cutBlock[j] = byte_xor(cutBlock[j], k[j])
             #print("Block : {} , Tournée : {}, Plaintext : {}, Key : {}".format(m, i, cutBlock, K))
-            cutBlock = tournee_threefish(cutBlock, N)
+            cutBlock = tournee_threefish_inv(cutBlock, N)
         plaintext[m] = cutBlock
             
                 
@@ -191,3 +199,12 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
     return(plaintext)
 
 key2 = cut_as_words(key1)
+plaintext = read_file_as_bits(file)
+path_c = "test2.txt"
+path_dec = "test3.txt"
+c = list(chain.from_iterable(CBC_ThreeFish_encrypt(plaintext, 256, key2, tweaks)))
+write_file_from_bytes(c, path_c)
+key2 = cut_as_words(key1)
+cyphertext = read_file_as_bits('C:\\Users\\Arle\\Desktop\\GS15\\'+path_c)
+dec = list(chain.from_iterable(CBC_ThreeFish_decrypt(cyphertext, 256, key2, tweaks)))
+write_file_from_bytes(dec, path_dec)
