@@ -61,7 +61,7 @@ def addition_nocarry(a,b):
             carry = 0
             result.append(byte_res)
     return(result)
-def substraction_nocarry(a,b): 
+def substraction_nocarry(a,b): #Beware, it is not commuative
     """
     Beware, bytes are read left to right
     """
@@ -78,17 +78,17 @@ def substraction_nocarry(a,b):
             result.append(byte_res)
     return(result)
 
-def circular_permutation_left(m, R):
+def circular_permutation_left(m, R): # Tested and works
     rol_m = BitArray(m)
     rol_m.rol(R)
     return(bytearray(rol_m.bytes))
 
-def circular_permutation_right(m, R):
+def circular_permutation_right(m, R): # Tested and works
     ror_m = BitArray(m)
     ror_m.ror(R)
     return(bytearray(ror_m.bytes))
 
-def byte_xor(m1,m2):
+def byte_xor(m1,m2): # Tested and works
     return(bytearray(a ^ b for a,b in zip(m1,m2)))
         
 def key_generation(K,tweaks,N,i): 
@@ -114,22 +114,22 @@ def key_generation(K,tweaks,N,i):
     
     return k
 
-def sub_primitive_mix(m1, m2, R):
+def sub_primitive_mix(m1, m2, R):# Tested and works
     m1_prime = addition_nocarry(m1, m2)
-    m2_prime = byte_xor(m1, circular_permutation_left(m2, R))
+    m2_prime = byte_xor(m1_prime, circular_permutation_left(m2, R))
     return(m1_prime, m2_prime)
 
-def sub_primitive_mixinv(m1, m2, R):
-    m1_prime = substraction_nocarry(m1, m2)
-    m2_prime = byte_xor(m1, circular_permutation_right(m2, R))
-    return(m1_prime, m2_prime)
+def sub_primitive_mixinv(m1_prime, m2_prime, R):# Tested and works, inverts correctly
+     m2 = circular_permutation_right(byte_xor(m1_prime, m2_prime), R)
+     m1 = substraction_nocarry(m1_prime, m2)
+     return(m1, m2)
 def perm_primitive_test(M):
     l = len(M)
     M[0], M[l-1] = M[l-1], M[0]
     M[1], M[l-2] = M[l-2], M[1]
     return(M)
 
-def tournee_threefish(M, N):      
+def tournee_threefish(M, N):# Tested and works   
     #Subsitution
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mix(M[2*p], M[2*p+1], 4)
@@ -137,12 +137,13 @@ def tournee_threefish(M, N):
     #M = perm_primitive_test(M)
     return(M)
 
-def tournee_threefish_inv(M, N):      
+def tournee_threefish_inv(M, N):# Tested and works   
+     #Permutation
+    #M = perm_primitive_test(M)
     #Subsitution
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mixinv(M[2*p], M[2*p+1], 4)
-    #Permutation
-    #M = perm_primitive_test(M)
+   
     return(M)    
     
 def cut_as_words(M, l=8):
@@ -150,10 +151,16 @@ def cut_as_words(M, l=8):
     M : bytearray to cut, interpreted as hex
     l = length of a word in bytes
     """
-    N = (len(M)//l)
-    cutM = [None] * N
-    for m in range(0,N):
-        cutM[m] = M[l*m:l*(m+1)]
+    if len(M)%l == 0 :
+        N = (len(M)//l)
+        cutM = [None] * N
+        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
+    else:
+        N = (len(M)//l)
+        cutM = [None] * (N+1)
+        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
+        cutM[-1]=M[(N)*l:] + bytearray([0]*(l-len(M[(N)*l:] )))
+        
     return(cutM)
     
 def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
@@ -183,14 +190,14 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
     keys = [key_generation(K, tweaks, N, i) for i in range(0,76)]
     for m in range(0,(len(cyphertext)*8)//block_len):
         cutBlock = cutCypher[N*m:N*(m+1)]
+       
         for l in range(0,76):
             i = 75 - l
+            cutBlock = tournee_threefish_inv(cutBlock, N)
             if (i%4 == 0) or (i == 75):
                 k = keys[i]
                 for j in range(0, N):
-                    cutBlock[j] = byte_xor(cutBlock[j], k[j])
-            #print("Block : {} , Tournée : {}, Plaintext : {}, Key : {}".format(m, i, cutBlock, K))
-            cutBlock = tournee_threefish_inv(cutBlock, N)
+                    cutBlock[j] = byte_xor(cutBlock[j], k[j])            
         plaintext[m] = cutBlock
             
                 
