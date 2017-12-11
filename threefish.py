@@ -134,12 +134,12 @@ def tournee_threefish(M, N):# Tested and works
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mix(M[2*p], M[2*p+1], 4)
     #Permutation
-    #M = perm_primitive_test(M)
+    M = perm_primitive_test(M)
     return(M)
 
 def tournee_threefish_inv(M, N):# Tested and works   
      #Permutation
-    #M = perm_primitive_test(M)
+    M = perm_primitive_test(M)
     #Subsitution
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mixinv(M[2*p], M[2*p+1], 4)
@@ -166,8 +166,8 @@ def cut_as_words(M, l=8):
 def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
     N = block_len//64
     cutPlain = cut_as_words(plaintext)
-    cyphertext = [None]*((len(plaintext)*8)//block_len)
-    for m in range(0,(len(plaintext)*8)//block_len):
+    cyphertext = [None]*((len(cutPlain)*64)//block_len)
+    for m in range(0,((len(cutPlain)*64)//block_len)):
         cutBlock = cutPlain[N*m:N*(m+1)]
         for i in range(0,76):
             if (i%4 == 0) or (i == 75):
@@ -177,7 +177,7 @@ def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
             #print("Block : {} , Tournée : {}, Plaintext : {}, Key : {}".format(m, i, cutBlock, K))
             cutBlock = tournee_threefish(cutBlock, N)
         cyphertext[m] = cutBlock
-            
+        
                 
         
     
@@ -186,9 +186,9 @@ def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
 def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
     N = block_len//64
     cutCypher = cut_as_words(cyphertext)
-    plaintext = [None]*((len(cyphertext)*8)//block_len)
+    plaintext = [None]*((len(cutCypher)*64)//block_len)
     keys = [key_generation(K, tweaks, N, i) for i in range(0,76)]
-    for m in range(0,(len(cyphertext)*8)//block_len):
+    for m in range(0,((len(cutCypher)*64)//block_len)):
         cutBlock = cutCypher[N*m:N*(m+1)]
        
         for l in range(0,76):
