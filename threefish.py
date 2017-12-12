@@ -45,6 +45,23 @@ def write_file_from_bytes(f, path):
 def bitstring_to_bytes(s):
     return int(s, 2).to_bytes(len(s) // 8, byteorder='big')
 
+def cut_as_words(M, l=8):
+    """
+    M : bytearray to cut, interpreted as hex
+    l = length of a word in bytes
+    """
+    if len(M)%l == 0 :
+        N = (len(M)//l)
+        cutM = [None] * N
+        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
+    else:
+        N = (len(M)//l)
+        cutM = [None] * (N+1)
+        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
+        cutM[-1]=M[(N)*l:] + bytearray([0]*(l-len(M[(N)*l:] )))
+        
+    return(cutM)
+
 def addition_nocarry(a,b): 
     """
     Beware, bytes are read left to right
@@ -146,49 +163,40 @@ def tournee_threefish_inv(M, N):# Tested and works
    
     return(M)    
     
-def cut_as_words(M, l=8):
-    """
-    M : bytearray to cut, interpreted as hex
-    l = length of a word in bytes
-    """
-    if len(M)%l == 0 :
-        N = (len(M)//l)
-        cutM = [None] * N
-        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
-    else:
-        N = (len(M)//l)
-        cutM = [None] * (N+1)
-        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
-        cutM[-1]=M[(N)*l:] + bytearray([0]*(l-len(M[(N)*l:] )))
-        
-    return(cutM)
+
     
 def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
     N = block_len//64
     cutPlain = cut_as_words(plaintext)
-    cyphertext = [None]*((len(cutPlain)*64)//block_len)
-    for m in range(0,((len(cutPlain)*64)//block_len)):
+    blockNumber = (len(cutPlain)*64)//block_len
+    cyphertext = [None]*blockNumber
+    for m in range(0,blockNumber):
         cutBlock = cutPlain[N*m:N*(m+1)]
         for i in range(0,76):
             if (i%4 == 0) or (i == 75):
                 k = key_generation(K, tweaks, N, i)
-                for j in range(0, N):
-                    cutBlock[j] = byte_xor(cutBlock[j], k[j])
-            #print("Block : {} , Tournée : {}, Plaintext : {}, Key : {}".format(m, i, cutBlock, K))
+                for j in range(0, N): cutBlock[j] = byte_xor(cutBlock[j], k[j])
             cutBlock = tournee_threefish(cutBlock, N)
         cyphertext[m] = cutBlock
+    if ((len(cutPlain)*64) % block_len) != 0:
+       cutBlock = cutPlain[N*blockNumber:] + (4-len(cutPlain[N*blockNumber:]))*[bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00')]
+       for i in range(0,76):
+            if (i%4 == 0) or (i == 75):
+                k = key_generation(K, tweaks, N, i)
+                for j in range(0, N): cutBlock[j] = byte_xor(cutBlock[j], k[j])
+            cutBlock = tournee_threefish(cutBlock, N)
+       cyphertext.append(cutBlock)
         
                 
-        
-    
     return(cyphertext)
 
 def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
     N = block_len//64
     cutCypher = cut_as_words(cyphertext)
-    plaintext = [None]*((len(cutCypher)*64)//block_len)
+    blockNumber = ((len(cutCypher)*64)//block_len)
+    plaintext = [None]*blockNumber
     keys = [key_generation(K, tweaks, N, i) for i in range(0,76)]
-    for m in range(0,((len(cutCypher)*64)//block_len)):
+    for m in range(0,blockNumber):
         cutBlock = cutCypher[N*m:N*(m+1)]
        
         for l in range(0,76):
@@ -196,12 +204,8 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
             cutBlock = tournee_threefish_inv(cutBlock, N)
             if (i%4 == 0) or (i == 75):
                 k = keys[i]
-                for j in range(0, N):
-                    cutBlock[j] = byte_xor(cutBlock[j], k[j])            
-        plaintext[m] = cutBlock
-            
-                
-        
+                for j in range(0, N): cutBlock[j] = byte_xor(cutBlock[j], k[j])            
+        plaintext[m] = cutBlock 
     
     return(plaintext)
 
