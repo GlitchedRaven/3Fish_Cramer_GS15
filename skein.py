@@ -5,8 +5,26 @@ Created on Wed Dec 13 18:09:24 2017
 @author: Arle
 """
 import threefish as tf
-import sys
+from math import ceil
 
+def skein_cut_as_words(M, l=8):
+    """
+    M : bytearray to cut, interpreted as hex
+    l = length of a word in bytes
+    
+    Use specific padding for UBI tweaking
+    """
+    if len(M)%l == 0 :
+        N = (len(M)//l)
+        cutM = [None] * N
+        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
+    else:
+        N = (len(M)//l)
+        cutM = [None] * (N+1)
+        for m in range(0,N): cutM[m] = M[l*m:l*(m+1)]
+        cutM[-1]=M[(N)*l:] + bytearray(b'\x80') + bytearray([0]*(l-len(M[(N)*l:] )-1))
+        
+    return(cutM)
 def UBI(G, M, Ts, blockSize):
     """
     G a starting value of Nb bytes.
@@ -16,7 +34,7 @@ def UBI(G, M, Ts, blockSize):
     ToBytes(Ts + min(NM; (i + 1)Nb) + ai2126 + bi(B2119 + 2127);
     """
     N = blockSize // 64
-    cutM = block_padding(tf.cut_as_words(M), blockSize) # Cut as word of 64 bit and pad it
+    cutM = block_padding(M, blockSize*8) # Cut as word of 64 bit and pad it
     
     Nm = len(cutM)
     Nb = N * 8
@@ -29,20 +47,40 @@ def UBI(G, M, Ts, blockSize):
         
         currentTs = Ts + min(Nm, (i+1)*Nb) + tweakAddition
         currentM = cutM[i]
-        H = monoblock_ThreeFish(H, currentTs.to_bytes(16, sys.byteorder), currentM )
+        H = monoblock_ThreeFish(H, currentTs.to_bytes(16, 'big'), currentM )
         for j in range(0, N): H[j] = tf.byte_xor(H[j], currentM[j])
     
     
 
-
-def skein(Nb, No, K):
+def skein_output(G,No,Nb):
+    T_out = 63*(2**120)
+    O = []
+    for i in range(0, ceil(No/8)+1):
+        O.append(UBI(G, i.to_bytes(8, 'big'), T_out),Nb)
+    return O
+    
+def simple_skein(Nb, No, M):
     """ 
     Skein main function, 
-    Nb = block state size in bits
+    Nb = block state size in bytes. Must be 32, 64, or 128.
     No = output size in bits
+    M = The message to be hashed, a string of up to 299 􀀀 8 bits (296 􀀀 1 bytes)
     K = key of Nk bits, can be set to 0 if needed
     """
+    if Nb == 32 and No == 256: 
+        C = [0xFC9DA860D048B449.to_bytes(8, 'big'), 0x2FCA66479FA7D833.to_bytes(8, 'big'), 0xB33BC3896656840F.to_bytes(8, 'big'), 0x6A54E920FDE8DA69.to_bytes(8, 'big')]
+    elif Nb == 32 and No == 128:
+        C = 0
+        
+    T_cfg = 4*(2**120)
+    T_msg = 48*(2**120)
     
+    K_prime = bytearray(Nb)
+    cutM = skein_cut_as_words(M)
+    G0 = UBI(K_prime, C, T_cfg.to_bytes(16, 'big'), Nb)
+    G1 = UBI(G0, cutM, T_msg.to_bytes(16, 'big'), Nb)
+    H = skein_output(G1, No, Nb)
+    return(H)
 def block_padding(cutM, blockSize):
     """
     M is a list of 64 bits words
@@ -64,6 +102,9 @@ def monoblock_ThreeFish(K, T, P, blockSize):
     for i in range(0,76):
         if (i%4 == 0) or (i == 75):
             k = tf.key_generation(K, T, N, i)
-            for j in range(0, N): H[j] = tf.byte_xor(P[j], k[j])
+            for j in range(0, N): P[j] = tf.byte_xor(P[j], k[j])
             H = tf.tournee_threefish(P, N)
     return(H)
+
+
+simple_skein(32, 256, b'hello')
