@@ -179,7 +179,7 @@ def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
             cutBlock = tournee_threefish(cutBlock, N)
         cyphertext[m] = cutBlock
     if ((len(cutPlain)*64) % block_len) != 0:
-       cutBlock = cutPlain[N*blockNumber:] + (4-len(cutPlain[N*blockNumber:]))*[bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00')]
+       cutBlock = cutPlain[N*blockNumber:] + (N-len(cutPlain[N*blockNumber:]))*[bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00')]
        for i in range(0,76):
             if (i%4 == 0) or (i == 75):
                 k = key_generation(K, tweaks, N, i)
@@ -208,6 +208,7 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
         plaintext[m] = cutBlock 
     
     return(plaintext)
+
 
 key2 = cut_as_words(key1)
 plaintext = read_file_as_bits(file)
