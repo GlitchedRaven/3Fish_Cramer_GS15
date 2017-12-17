@@ -49,7 +49,7 @@ def UBI(G, M, Ts, blockSize):
         else: tweakAddition = 0
         
         currentTs = int.from_bytes(Ts, 'big') + min(Nm, (i+1)*Nb) + tweakAddition
-        H = monoblock_ThreeFish(H, bytearray(currentTs.to_bytes(16, 'big')), cutBlock[:], blockSize )
+        H = monoblock_ThreeFish(H[:], bytearray(currentTs.to_bytes(16, 'big')), cutBlock[:], blockSize )
         for j in range(0, N): H[j] = tf.byte_xor(H[j], cutBlock[j])
         
     return(H)
@@ -60,7 +60,7 @@ def skein_output(G,Nb, iterations):
     T_out = 63*(2**120)
     O = []
     for i in range(0, iterations):
-        O.append(UBI(G[:], [bytearray(i.to_bytes(8, 'big'))], T_out.to_bytes(16, 'big'),Nb))
+        O.append(UBI(G[:], [i.to_bytes(8, 'big')], T_out.to_bytes(16, 'big'),Nb))
     return list(chain.from_iterable(O))
     
 def simple_skein(Nb, No, M):
@@ -73,9 +73,11 @@ def simple_skein(Nb, No, M):
     """
     if Nb == 256 and No == 256: 
         C = [0xFC9DA860D048B449.to_bytes(8, 'big'), 0x2FCA66479FA7D833.to_bytes(8, 'big'), 0xB33BC3896656840F.to_bytes(8, 'big'), 0x6A54E920FDE8DA69.to_bytes(8, 'big')]
-    elif Nb == 32 and No == 128:
-        C = 0
-        
+    elif Nb == 512 and No == 512:
+         C = [0x4903ADFF749C51CE.to_bytes(8, 'big'), 0x0D95DE399746DF03.to_bytes(8, 'big'), 0x8FD1934127C79BCE.to_bytes(8, 'big'), 0x9A255629FF352CB1.to_bytes(8, 'big'), 0x5DB62599DF6CA7B0.to_bytes(8, 'big'), 0xEABE394CA9D5C3F4.to_bytes(8, 'big'), 0x991112C71A75B523.to_bytes(8, 'big'), 0xAE18A40B660FCC33.to_bytes(8, 'big')]
+    elif Nb == 512 and No == 256:
+        C = [0xCCD044A12FDB3E13.to_bytes(8, 'big'), 0xE83590301A79A9EB.to_bytes(8, 'big'), 0x55AEA0614F816E6F.to_bytes(8, 'big'), 0x2A2767A4AE9B94DB.to_bytes(8, 'big'), 0xEC06025E74DD7683.to_bytes(8, 'big'), 0xE7A436CDC4746251.to_bytes(8, 'big'), 0xC36FBAF9393AD185.to_bytes(8, 'big'), 0x3EEDBA1833EDFC13.to_bytes(8, 'big')]
+
     T_cfg = 4*(2**120)
     T_msg = 48*(2**120)
     
@@ -107,10 +109,10 @@ def monoblock_ThreeFish(K, T, P, blockSize):
     tweaks =[T[0:7], T[8:]]
     for i in range(0,76):
         if (i%4 == 0) or (i == 75):
-            k = tf.key_generation(K, tweaks, N, i)
+            k = tf.key_generation(K[:], tweaks, N, i)
             for j in range(0, N): P[j] = tf.byte_xor(P[j], k[j])
             H = tf.tournee_threefish(P, N)
     return(H)
 
 
-hashTest = simple_skein(256, 256, b'sadnightforthehosrsetofail')
+hashTest = simple_skein(256, 256, b'sadnightforthehosrsetofailmustgointothe123456789sadnightforthehosrsetofailmustgointothe12345678sadnightforthehosrsetofailmustgointothe123456789')
