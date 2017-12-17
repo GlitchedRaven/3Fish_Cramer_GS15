@@ -34,21 +34,24 @@ def UBI(G, M, Ts, blockSize):
     ToBytes(Ts + min(NM; (i + 1)Nb) + ai2126 + bi(B2119 + 2127);
     """
     N = blockSize // 64
-    cutM = block_padding(M, blockSize*8) # Cut as word of 64 bit and pad it
+    cutM = block_padding(M, blockSize) # Cut as word of 64 bit and pad it
+    blockNumber = ((len(cutM)*64)//blockSize)
     
     Nm = len(cutM)
     Nb = N * 8
     
     H = G
-    for i in range(0, len(cutM)):
+    for i in range(0,blockNumber):
+        cutBlock = cutM[N*i:N*(i+1)]
         if i == 0: tweakAddition = (2**126)
         elif i == len(cutM): tweakAddition = ((178**119)+(2**127))
         else: tweakAddition = 0
         
-        currentTs = Ts + min(Nm, (i+1)*Nb) + tweakAddition
-        currentM = cutM[i]
-        H = monoblock_ThreeFish(H, currentTs.to_bytes(16, 'big'), currentM )
-        for j in range(0, N): H[j] = tf.byte_xor(H[j], currentM[j])
+        currentTs = int.from_bytes(Ts, 'big') + min(Nm, (i+1)*Nb) + tweakAddition
+        H = monoblock_ThreeFish(H, bytearray(currentTs.to_bytes(16, 'big')), cutBlock[:], blockSize )
+        for j in range(0, N): H[j] = tf.byte_xor(H[j], cutBlock[j])
+        
+    return(H)
     
     
 
@@ -67,7 +70,7 @@ def simple_skein(Nb, No, M):
     M = The message to be hashed, a string of up to 299 􀀀 8 bits (296 􀀀 1 bytes)
     K = key of Nk bits, can be set to 0 if needed
     """
-    if Nb == 32 and No == 256: 
+    if Nb == 256 and No == 256: 
         C = [0xFC9DA860D048B449.to_bytes(8, 'big'), 0x2FCA66479FA7D833.to_bytes(8, 'big'), 0xB33BC3896656840F.to_bytes(8, 'big'), 0x6A54E920FDE8DA69.to_bytes(8, 'big')]
     elif Nb == 32 and No == 128:
         C = 0
@@ -75,9 +78,9 @@ def simple_skein(Nb, No, M):
     T_cfg = 4*(2**120)
     T_msg = 48*(2**120)
     
-    K_prime = bytearray(Nb)
+    K_prime = bytearray(Nb//8)
     cutM = skein_cut_as_words(M)
-    G0 = UBI(K_prime, C, T_cfg.to_bytes(16, 'big'), Nb)
+    G0 = UBI(tf.cut_as_words(K_prime), C, T_cfg.to_bytes(16, 'big'), Nb)
     G1 = UBI(G0, cutM, T_msg.to_bytes(16, 'big'), Nb)
     H = skein_output(G1, No, Nb)
     return(H)
@@ -99,12 +102,13 @@ def monoblock_ThreeFish(K, T, P, blockSize):
     P Plaintext, a string of bytes of length equal to the key.
     """
     N = blockSize//64
+    tweaks =[T[0:7], T[8:]]
     for i in range(0,76):
         if (i%4 == 0) or (i == 75):
-            k = tf.key_generation(K, T, N, i)
+            k = tf.key_generation(K, tweaks, N, i)
             for j in range(0, N): P[j] = tf.byte_xor(P[j], k[j])
             H = tf.tournee_threefish(P, N)
     return(H)
 
 
-simple_skein(32, 256, b'hello')
+simple_skein(256, 256, b'hello')
