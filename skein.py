@@ -6,6 +6,7 @@ Created on Wed Dec 13 18:09:24 2017
 """
 import threefish as tf
 from math import ceil
+from itertools import chain
 
 def skein_cut_as_words(M, l=8):
     """
@@ -55,12 +56,12 @@ def UBI(G, M, Ts, blockSize):
     
     
 
-def skein_output(G,No,Nb):
+def skein_output(G,Nb, iterations):
     T_out = 63*(2**120)
     O = []
-    for i in range(0, ceil(No/8)+1):
-        O.append(UBI(G, i.to_bytes(8, 'big'), T_out),Nb)
-    return O
+    for i in range(0, iterations):
+        O.append(UBI(G[:], [bytearray(i.to_bytes(8, 'big'))], T_out.to_bytes(16, 'big'),Nb))
+    return list(chain.from_iterable(O))
     
 def simple_skein(Nb, No, M):
     """ 
@@ -81,9 +82,10 @@ def simple_skein(Nb, No, M):
     K_prime = bytearray(Nb//8)
     cutM = skein_cut_as_words(M)
     G0 = UBI(tf.cut_as_words(K_prime), C, T_cfg.to_bytes(16, 'big'), Nb)
-    G1 = UBI(G0, cutM, T_msg.to_bytes(16, 'big'), Nb)
-    H = skein_output(G1, No, Nb)
-    return(H)
+    G1 = UBI(G0[:], cutM, T_msg.to_bytes(16, 'big'), Nb)
+    H = skein_output(G1, Nb, 2)
+    H = b''.join(H)
+    return(H[0:ceil(No/8)])
 def block_padding(cutM, blockSize):
     """
     M is a list of 64 bits words
@@ -111,4 +113,4 @@ def monoblock_ThreeFish(K, T, P, blockSize):
     return(H)
 
 
-simple_skein(256, 256, b'hello')
+hashTest = simple_skein(256, 256, b'sadnightforthehosrsetofail')
