@@ -60,7 +60,7 @@ def skein_output(G,Nb, iterations):
     T_out = 63*(2**120)
     O = []
     for i in range(0, iterations):
-        O.append(UBI(G[:], [i.to_bytes(8, 'big')], T_out.to_bytes(16, 'big'),Nb))
+        O.append(UBI(G[:], [bytearray(i.to_bytes(8, 'big'))], T_out.to_bytes(16, 'big'),Nb))
     return list(chain.from_iterable(O))
     
 def simple_skein(Nb, No, M):
@@ -85,7 +85,7 @@ def simple_skein(Nb, No, M):
     cutM = skein_cut_as_words(M)
     G0 = UBI(tf.cut_as_words(K_prime), C, T_cfg.to_bytes(16, 'big'), Nb)
     G1 = UBI(G0[:], cutM, T_msg.to_bytes(16, 'big'), Nb)
-    H = skein_output(G1, Nb, 2)
+    H = skein_output(G1, Nb, 1)
     H = b''.join(H)
     return(H[0:ceil(No/8)])
 def block_padding(cutM, blockSize):
@@ -96,7 +96,7 @@ def block_padding(cutM, blockSize):
     N = blockSize // 64
     if (len(cutM) % N) != 0:
         for i in range(1,(N * ((len(cutM) // N ) + 1) - len(cutM))+1):
-            cutM.append(b'\x00\x00\x00\x00\x00\x00\x00\x00')
+            cutM.append(bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00'))
     return cutM
 
 def monoblock_ThreeFish(K, T, P, blockSize):
@@ -106,13 +106,19 @@ def monoblock_ThreeFish(K, T, P, blockSize):
     P Plaintext, a string of bytes of length equal to the key.
     """
     N = blockSize//64
-    tweaks =[T[0:7], T[8:]]
+    tweaks =[T[0:8], T[8:]]
+    keys = [tf.key_generation(K[:], tweaks[:], N, i) for i in range(0,76)]
     for i in range(0,76):
         if (i%4 == 0) or (i == 75):
-            k = tf.key_generation(K[:], tweaks, N, i)
+            #k = tf.key_generation(K[:], tweaks, N, i)
+            k = keys[i]
             for j in range(0, N): P[j] = tf.byte_xor(P[j], k[j])
-            H = tf.tournee_threefish(P, N)
+        H = tf.tournee_threefish(P, N)
     return(H)
 
 
 hashTest = simple_skein(256, 256, b'sadnightforthehosrsetofailmustgointothe123456789sadnightforthehosrsetofailmustgointothe12345678sadnightforthehosrsetofailmustgointothe123456789')
+
+g0 = [bytearray(b'\ng\x19\xc2[\xfa\xb3'), bytearray(b'Z\xb2\x81\xa8\xad\xaf\x8b'), bytearray(b'\xf9a\x9e\x18\xa56#'), bytearray(b'\xf24\xa3\xe5q\xbc\xf4')]
+T_out = 63*(2**120)
+b = [b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00']

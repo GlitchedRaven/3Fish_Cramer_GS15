@@ -148,20 +148,28 @@ def perm_primitive(M):
     else: print ("Error in permutation, l = {}".format(l))
     return(M)
 
+def perm_primitive_inv(M):
+    l = len(M)
+    if l == 4: M[0], M[3], M[2], M[1] = M[0], M[1], M[2], M[3]
+    elif l == 8: M[2], M[1], M[4], M[7], M[6], M[5], M[0], M[3] = M[0], M[1], M[2], M[3], M[4], M[5], M[6], M[7]
+    elif l == 16: M[0], M[9], M[2], M[13], M[6], M[11], M[4], M[15], M[10], M[7], M[12], M[3], M[14], M[5], M[8], M[1] = M[0], M[1], M[2], M[3], M[4], M[5], M[6], M[7], M[8], M[9], M[10], M[11], M[12], M[13], M[14], M[15]
+    else: print ("Error in permutation, l = {}".format(l))
+    return(M)
+
 def tournee_threefish(M, N):# Tested and works   
     #Subsitution
     for p in range(0,N//2):
-        M[2*p], M[2*p + 1] = sub_primitive_mix(M[2*p], M[2*p+1], 4)
+        M[2*p], M[2*p + 1] = sub_primitive_mix(M[2*p], M[2*p+1], 42)
     #Permutation
     M = perm_primitive(M)
     return(M)
 
 def tournee_threefish_inv(M, N):# Tested and works   
      #Permutation
-    M = perm_primitive(M)
+    M = perm_primitive_inv(M)
     #Subsitution
     for p in range(0,N//2):
-        M[2*p], M[2*p + 1] = sub_primitive_mixinv(M[2*p], M[2*p+1], 4)
+        M[2*p], M[2*p + 1] = sub_primitive_mixinv(M[2*p], M[2*p+1], 42)
    
     return(M)    
     
@@ -213,7 +221,9 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
 
 
 key2 = cut_as_words(key1)
-plaintext = read_file_as_bits(file)
+#plaintext = read_file_as_bits(file)
+#plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x02'
 path_c = "test2.txt"
 path_dec = "test3.txt"
 c = list(chain.from_iterable(CBC_ThreeFish_encrypt(plaintext, 256, key2, tweaks)))
