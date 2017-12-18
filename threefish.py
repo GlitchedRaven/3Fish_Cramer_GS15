@@ -140,10 +140,12 @@ def sub_primitive_mixinv(m1_prime, m2_prime, R):# Tested and works, inverts corr
      m2 = circular_permutation_right(byte_xor(m1_prime, m2_prime), R)
      m1 = substraction_nocarry(m1_prime, m2)
      return(m1, m2)
-def perm_primitive_test(M):
+def perm_primitive(M):
     l = len(M)
-    M[0], M[l-1] = M[l-1], M[0]
-    M[1], M[l-2] = M[l-2], M[1]
+    if l == 4: M[0], M[1], M[2], M[3] = M[0], M[3], M[2], M[1]
+    elif l == 8: M[0], M[1], M[2], M[3], M[4], M[5], M[6], M[7] = M[2], M[1], M[4], M[7], M[6], M[5], M[0], M[3]
+    elif l == 16: M[0], M[1], M[2], M[3], M[4], M[5], M[6], M[7], M[8], M[9], M[10], M[11], M[12], M[13], M[14], M[15] = M[0], M[9], M[2], M[13], M[6], M[11], M[4], M[15], M[10], M[7], M[12], M[3], M[14], M[5], M[8], M[1]
+    else: print ("Error in permutation, l = {}".format(l))
     return(M)
 
 def tournee_threefish(M, N):# Tested and works   
@@ -151,12 +153,12 @@ def tournee_threefish(M, N):# Tested and works
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mix(M[2*p], M[2*p+1], 4)
     #Permutation
-    M = perm_primitive_test(M)
+    M = perm_primitive(M)
     return(M)
 
 def tournee_threefish_inv(M, N):# Tested and works   
      #Permutation
-    M = perm_primitive_test(M)
+    M = perm_primitive(M)
     #Subsitution
     for p in range(0,N//2):
         M[2*p], M[2*p + 1] = sub_primitive_mixinv(M[2*p], M[2*p+1], 4)
