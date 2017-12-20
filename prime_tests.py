@@ -1,6 +1,6 @@
 
 import random
-from fractions import gcd
+from math import gcd
 from math import log
 from math import floor
 
@@ -116,7 +116,7 @@ def Miller_Rabin_test(n, k):
 
 
     for round in list(range(k)):
-        a = random.randint(2, m)
+        a = random.randint(2, n-1)
         if is_composite(a, s, d, n):
             return False
     return True
