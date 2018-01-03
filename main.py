@@ -57,7 +57,7 @@ def choix_chiffrement():
             
             h = skein.simple_skein(Nb, No, plaintext)
             print(h)
-            fo = open(path_h, "w")
+            fo = open(path_h, "wb")
             fo.write(h)
             fo.close
         elif selection == '4':
