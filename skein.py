@@ -77,7 +77,8 @@ def simple_skein(Nb, No, M):
          C = [0x4903ADFF749C51CE.to_bytes(8, 'big'), 0x0D95DE399746DF03.to_bytes(8, 'big'), 0x8FD1934127C79BCE.to_bytes(8, 'big'), 0x9A255629FF352CB1.to_bytes(8, 'big'), 0x5DB62599DF6CA7B0.to_bytes(8, 'big'), 0xEABE394CA9D5C3F4.to_bytes(8, 'big'), 0x991112C71A75B523.to_bytes(8, 'big'), 0xAE18A40B660FCC33.to_bytes(8, 'big')]
     elif Nb == 512 and No == 256:
         C = [0xCCD044A12FDB3E13.to_bytes(8, 'big'), 0xE83590301A79A9EB.to_bytes(8, 'big'), 0x55AEA0614F816E6F.to_bytes(8, 'big'), 0x2A2767A4AE9B94DB.to_bytes(8, 'big'), 0xEC06025E74DD7683.to_bytes(8, 'big'), 0xE7A436CDC4746251.to_bytes(8, 'big'), 0xC36FBAF9393AD185.to_bytes(8, 'big'), 0x3EEDBA1833EDFC13.to_bytes(8, 'big')]
-
+    elif Nb == 1024  and No == 1024:
+        C = [0xD593DA0741E72355.to_bytes(8, 'big'), 0x15B5E511AC73E00C.to_bytes(8, 'big'), 0x5180E5AEBAF2C4F0.to_bytes(8, 'big'), 0x03BD41D3FCBCAFAF.to_bytes(8, 'big'),0x1CAEC6FD1983A898.to_bytes(8, 'big'), 0x6E510B8BCDD0589F.to_bytes(8, 'big'), 0x77E2BDFDC6394ADA.to_bytes(8, 'big'), 0xC11E1DB524DCB0A3.to_bytes(8, 'big'),0xD6D14AF9C6329AB5.to_bytes(8, 'big'), 0x6A9B0BFC6EB67E0D.to_bytes(8, 'big'), 0x9243C60DCCFF1332.to_bytes(8, 'big'), 0x1A1F1DDE743F02D4.to_bytes(8, 'big'),0x0996753C10ED0BB8.to_bytes(8, 'big'), 0x6572DD22F2B4969A.to_bytes(8, 'big'), 0x61FD3062D00A579A.to_bytes(8, 'big'), 0x1DE0536E8682E539.to_bytes(8, 'big')]
     T_cfg = 4*(2**120)
     T_msg = 48*(2**120)
     
@@ -117,8 +118,8 @@ def monoblock_ThreeFish(K, T, P, blockSize):
     return(H)
 
 
-hashTest = simple_skein(256, 256, b'sadnightforthehosrsetofailmustgointothe123456789sadnightforthehosrsetofailmustgointothe12345678sadnightforthehosrsetofailmustgointothe123456789')
+#hashTest = simple_skein(256, 256, b'sadnightforthehosrsetofailmustgointothe123456789sadnightforthehosrsetofailmustgointothe12345678sadnightforthehosrsetofailmustgointothe123456789')
 
-g0 = [bytearray(b'\ng\x19\xc2[\xfa\xb3'), bytearray(b'Z\xb2\x81\xa8\xad\xaf\x8b'), bytearray(b'\xf9a\x9e\x18\xa56#'), bytearray(b'\xf24\xa3\xe5q\xbc\xf4')]
-T_out = 63*(2**120)
-b = [b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00']
+#g0 = [bytearray(b'\ng\x19\xc2[\xfa\xb3'), bytearray(b'Z\xb2\x81\xa8\xad\xaf\x8b'), bytearray(b'\xf9a\x9e\x18\xa56#'), bytearray(b'\xf24\xa3\xe5q\xbc\xf4')]
+#T_out = 63*(2**120)
+#b = [b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00', b'\x00\x00\x00\x00\x00\x00\x00\x00']
