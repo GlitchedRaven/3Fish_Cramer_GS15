@@ -56,10 +56,10 @@ def choix_chiffrement():
             plaintext = tf.read_file_as_bits(os.path.join(cwd, file_path))
             
             h = skein.simple_skein(Nb, No, plaintext)
-            print(h)
+            
             fo = open(path_h, "wb")
             fo.write(h)
-            fo.close
+            fo.close()
         elif selection == '4':
             import threefish as tf
             import skein
@@ -91,6 +91,12 @@ def choix_chiffrement():
             hashfile =  tf.read_file_as_bits(os.path.join(cwd, hash_path))
             
             h = skein.simple_skein(Nb, No, plaintext)
+            
+            if h == hashfile:
+                print("The hash and the file match")
+            else:
+                print("The hash and the file DON'T match")
+            
         elif selection == '7': 
             break
         else: 
