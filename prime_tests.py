@@ -5,7 +5,6 @@ from math import gcd
 from math import log
 from math import floor
 import binascii
-import struct
 
 class LFSR:
     def __init__(self, memory_size, xor_points_list=[]):
