@@ -4,6 +4,8 @@ import json
 from math import gcd
 from math import log
 from math import floor
+import binascii
+import struct
 
 class LFSR:
     def __init__(self, memory_size, xor_points_list=[]):
@@ -284,12 +286,8 @@ if __name__ == '__main__':
         prime= 0
         while prime == 0:
             candidate = pick_candidate(length)
-            # print(candidate)
             if Baillie_PSW(candidate, 2, 800):
-                # print('Success')
                 prime = candidate
-            # else:
-            #     print('Fail')
         return prime
 
     def is_smooth(p, k=2, B=800):
@@ -307,16 +305,13 @@ if __name__ == '__main__':
         h = 0
         while h == 0:
             candidate = random.randint(2, p-1)
-            # print('candidate: '+str(candidate))
-            # print('p: '+str(p))
-            # print('(p-1)/q: '+str((p-1)/q))
             if pow(candidate, (p-1)//q, p) !=1:
                 h = candidate
         return h
 
 
     def generate_keys(length=8):
-        length*=8*2
+        length*=8
         p = pick_prime(length)
         alpha1 = find_generator(p)
         alpha2 = find_generator(p)
@@ -358,19 +353,23 @@ if __name__ == '__main__':
         s = s.lstrip('-0b')
         return (len(s)//8)+1
 
-    def encode_block(block,p, b, B1, B2, W):
+    def encode_block(block,p, b, B1, B2, W, block_num):
 
         block = int.from_bytes(block, byteorder='big')
-        c = (pow(W, b, p)*block)%p
-        cyfered_block = bytearray(c.to_bytes((c.bit_length()//8)+1, byteorder='big'))
-        print(cyfered_block)
+
+        c = int((pow(W, b, p)*block)%p)
+        cyfered_block = bytearray(c.to_bytes(((c.bit_length()+7)//8), byteorder='big'))
         with open('cyfer.json', 'r+') as cyferdatafile:
             data = cyferdatafile.read()
             if len(data)>0:
                 current_dict = json.loads(data)
-                current_dict['Cyfered Block']= str(cyfered_block)
+                if 'Cyfered Block' not in list(current_dict.keys()):
+                    current_dict['Cyfered Block'] = {str(block_num): str(cyfered_block)}
+                else:
+
+                    current_dict['Cyfered Block'][str(block_num)] = str(cyfered_block)
             else:
-                current_dict = {'Cyfered Block': str(cyfered_block)}
+                current_dict = {'Cyfered Block':{str(block_num): str(cyfered_block)}}
 
             cyferdatafile.seek(0)
             json.dump(current_dict,
@@ -390,22 +389,26 @@ if __name__ == '__main__':
         B1 = pow(alpha1, b, p)
         B2 = pow(alpha2, b, p)
 
-        m_bytes = bytearray(str(m).encode('utf-8'))
+        # m_bytes = bytes.fromhex(binascii.hexlify(str(m).encode('utf-8')))
+        m_bytes = bytearray(m.encode('utf-8'))
+
         m_blocks = []
         for block_number in list(range(len(m_bytes)//block_size)):
             m_block = bytearray()
             for i in list(range(block_size)):
-                m_block.append(m_bytes[block_number*8+i])
+                m_block.append(m_bytes[block_number*block_size+i])
             m_blocks.append(m_block)
 
-        m_block = m_bytes[len(m_bytes)//block_size:]
+        m_block = m_bytes[(len(m_bytes)//block_size)*block_size:]
         while len(m_block) < block_size:
-            m_block.append(b'x00')
+            m_block.append(0)
+        m_blocks.append(m_block)
 
         cyfered_text = bytearray()
 
-        for block in m_blocks:
-            cyfered_block = encode_block(block,p, b, B1, B2, W)
+        block_num = 0
+        for block_num in list(range(len(m_blocks))):
+            cyfered_block = encode_block(m_blocks[block_num],p, b, B1, B2, W, block_num)
             cyfered_text.extend(cyfered_block)
 
 
@@ -428,6 +431,10 @@ if __name__ == '__main__':
             if len(data) > 0:
                 current_dict = json.loads(data)
                 current_dict['Cyfered Text'] = str(cyfered_text)
+                if block_num < len(list(current_dict['Cyfered Block'].keys())):
+                    for num_key in list(current_dict['Cyfered Block'].keys()):
+                        if int(num_key) > block_num:
+                            del current_dict['Cyfered Block'][num_key]
             else:
                 current_dict = {'Cyfered Text': str(cyfered_text)}
             cyferdatafile.seek(0)
@@ -437,19 +444,23 @@ if __name__ == '__main__':
 
         return cyfered_text
 
-    def decode_bloc(block, p, B1, w):
+    def decode_bloc(block, p, B1, w, block_num):
 
         block = int.from_bytes(block, byteorder='big')
         m = (pow(B1, p-1-w, p) * block)% p
-        uncyfered_block = bytearray(m.to_bytes((m.bit_length()//8)+1, byteorder='big'))
+
+        uncyfered_block = bytearray(m.to_bytes(((m.bit_length()+7)//8), byteorder='big'))
 
         with open('cyfer.json', 'r+') as cyferdatafile:
             data = cyferdatafile.read()
             if len(data) > 0:
                 current_dict = json.loads(data)
-                current_dict['Cyfered Block'] = str(uncyfered_block)
+                if 'Uncyfered Block' not in list(current_dict.keys()):
+                    current_dict['Uncyfered Block'] = {str(block_num): str(uncyfered_block)}
+                else:
+                    current_dict['Uncyfered Block'][str(block_num)] = str(uncyfered_block)
             else:
-                current_dict = {'Cyfered Block': str(uncyfered_block)}
+                current_dict = {'Uncyfered Block': {str(block_num): str(uncyfered_block)} }
             cyferdatafile.seek(0)
             json.dump(current_dict,
                       cyferdatafile,indent=4, sort_keys=True)
@@ -470,20 +481,26 @@ if __name__ == '__main__':
         for block_number in list(range(len(c)//block_size)):
             c_block = bytearray()
             for i in list(range(block_size)):
-                c_block.append(c[block_number*8+i])
+                c_block.append(c[block_number*block_size+i])
             c_blocks.append(c_block)
 
-        for block in c_blocks:
-            uncyfered_block = decode_bloc(block, p, B1, w)
+        block_num = 0
+        for block_num in list(range(len(c_blocks))):
+            uncyfered_block = decode_bloc(c_blocks[block_num], p, B1, w, block_num)
             uncyfered_text.extend(uncyfered_block)
+
 
         with open('cyfer.json', 'r+') as cyferdatafile:
             data = cyferdatafile.read()
             if len(data) > 0:
                 current_dict = json.loads(data)
-                current_dict['Unyfered Text'] = str(uncyfered_text)
+                current_dict['Uncyfered Text'] = (uncyfered_text.decode('utf-8'))
+                if block_num < len(list(current_dict['Uncyfered Block'].keys())):
+                    for num_key in list(current_dict['Uncyfered Block'].keys()):
+                        if int(num_key) > block_num:
+                            del current_dict['Uncyfered Block'][num_key]
             else:
-                current_dict = {'Unyfered Text': str(uncyfered_text)}
+                current_dict = {'Uncyfered Text': (uncyfered_text.decode('utf-8'))}
             cyferdatafile.seek(0)
             json.dump(current_dict,
                       cyferdatafile,indent=4, sort_keys=True)
@@ -491,50 +508,41 @@ if __name__ == '__main__':
 
         return uncyfered_text
 
-    def test():
-        message = 'this is the message to be cyfered by the cyfer function and lets hope it works cause its gtting late!'
+    def test(message=None, block_len=8):
+        if message is None:
+            message = 'Hello World!! This is a default test string to be cyfered to check if everything works as expected!'
         clear_text = bytearray(str(message).encode('utf-8'))
+        byte_text = bytearray(binascii.hexlify(bytes(clear_text)))
         with open('cyfer.json', 'r+') as cyferdatafile:
             data = cyferdatafile.read()
             if len(data) > 0:
                 current_dict = json.loads(data)
                 current_dict['Clear Text'] = str(clear_text)
+                current_dict['byte_text'] = str(byte_text)
             else:
                 current_dict = {'Clear Text': str(clear_text)}
+                current_dict['byte_text'] = str(byte_text)
             cyferdatafile.seek(0)
             json.dump(current_dict,
                       cyferdatafile,indent=4, sort_keys=True)
             cyferdatafile.truncate()
 
-        generate_keys(8)
+        generate_keys(block_len)
 
         with open('keys.json') as keydatafile:
             keys = json.loads(keydatafile.read())
             public_key = keys['Alice']['public key']
-            cyfer = encode_message(message, public_key, 8)
-            print(cyfer)
+            cyfer = encode_message(message, public_key, block_len)
+
             with open('keys.json') as keydatafile:
                 keys = json.loads(keydatafile.read())
                 public_key['B1'] = keys['Bob']['B1']
                 public_key['B2'] = keys['Bob']['B2']
                 private_key = keys['Alice']['private key']
-                decyfer = decode_message(cyfer, private_key, public_key, 8)
-                print(decyfer)
+                decyfer = decode_message(cyfer, private_key, public_key, block_len)
 
 
 
-
-
-
-
-
-    # t = Baillie_PSW(37, 2, 800)
-    # print(t)
-    # t = Baillie_PSW(179425993, 2, 800)
-    # print(t)
-    # t = test(256)
-    #
-    # print(t)
-    test()
+    test('STAR WARS VIII est nul a chier c est honteux bordel! Ils ont tué la saga, fuck mickey', 32)
 
 
