@@ -37,7 +37,7 @@ def read_file_as_bits(filename): # On l'implementera peut-etre sous forme de flu
         """
 def write_file_from_bytes(f, path):
     # Open a file
-    fo = open("C:\\Users\\Arle\\Desktop\\GS15\\"+path, "wb")
+    fo = open(path, "wb")
     for m in f:fo.write(m)
     # Close opend file
     fo.close()
@@ -220,15 +220,16 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
     return(plaintext)
 
 
-key2 = cut_as_words(key1)
-#plaintext = read_file_as_bits(file)
-#plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x02'
-path_c = "test2.txt"
-path_dec = "test3.txt"
-c = list(chain.from_iterable(CBC_ThreeFish_encrypt(plaintext, 256, key2, tweaks)))
-write_file_from_bytes(c, path_c)
-key2 = cut_as_words(key1)
-cyphertext = read_file_as_bits('C:\\Users\\Arle\\Desktop\\GS15\\'+path_c)
-dec = list(chain.from_iterable(CBC_ThreeFish_decrypt(cyphertext, 256, key2, tweaks)))
-write_file_from_bytes(dec, path_dec)
+def test_chiffrement():
+    key2 = cut_as_words(key1)
+    #plaintext = read_file_as_bits(file)
+    #plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+    plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x02'
+    path_c = "test2.txt"
+    path_dec = "test3.txt"
+    c = list(chain.from_iterable(CBC_ThreeFish_encrypt(plaintext, 256, key2, tweaks)))
+    write_file_from_bytes(c, path_c)
+    key2 = cut_as_words(key1)
+    cyphertext = read_file_as_bits('C:\\Users\\Arle\\Desktop\\GS15\\'+path_c)
+    dec = list(chain.from_iterable(CBC_ThreeFish_decrypt(cyphertext, 256, key2, tweaks)))
+    write_file_from_bytes(dec, path_dec)
