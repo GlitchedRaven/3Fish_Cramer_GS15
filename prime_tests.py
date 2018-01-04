@@ -5,6 +5,7 @@ from math import gcd
 from math import log
 from math import floor
 import binascii
+import hashlib
 
 class LFSR:
     def __init__(self, memory_size, xor_points_list=[]):
@@ -410,6 +411,15 @@ if __name__ == '__main__':
             cyfered_block = encode_block(m_blocks[block_num],p, b, B1, B2, W, block_num)
             cyfered_text.extend(cyfered_block)
 
+        chain_to_hash = bytearray()
+        chain_to_hash.extend(B1.to_bytes(((B1.bit_length()+7)//8), byteorder='big'))
+        chain_to_hash.extend(B2.to_bytes(((B2.bit_length()+7)//8), byteorder='big'))
+        chain_to_hash.extend(cyfered_text)
+        beta_hash = hashlib.sha3_256(chain_to_hash).digest()
+
+        beta = int.from_bytes(beta_hash, byteorder='big')
+        verif = (pow(X, b, p) * pow(Y, (b*beta), p))%p
+        verif_bytes = bytearray(verif.to_bytes(((verif.bit_length()+7)//8), byteorder='big'))
 
         with open('keys.json', 'r+') as keydatafile:
             data = keydatafile.read()
@@ -430,18 +440,25 @@ if __name__ == '__main__':
             if len(data) > 0:
                 current_dict = json.loads(data)
                 current_dict['Cyfered Text'] = str(cyfered_text)
+                current_dict['beta_hash'] = str(beta_hash)
+
+                current_dict['verif']= str(verif)
+                current_dict['verif_bytes']= str(verif_bytes)
                 if block_num < len(list(current_dict['Cyfered Block'].keys())):
                     for num_key in list(current_dict['Cyfered Block'].keys()):
                         if int(num_key) > block_num:
                             del current_dict['Cyfered Block'][num_key]
             else:
-                current_dict = {'Cyfered Text': str(cyfered_text)}
+                current_dict = {'Cyfered Text': str(cyfered_text),
+                                'beta_hash': str(beta_hash),
+                                'verif': str(verif),
+                                'verif_bytes': str(verif_bytes)}
             cyferdatafile.seek(0)
             json.dump(current_dict,
                       cyferdatafile,indent=4, sort_keys=True)
             cyferdatafile.truncate()
 
-        return cyfered_text
+        return {'B1': B1, 'B2': B2, 'cyfer': bytes(cyfered_text), 'verif': verif_bytes}
 
     def decode_bloc(block, p, B1, w, block_num):
 
@@ -467,12 +484,33 @@ if __name__ == '__main__':
 
         return uncyfered_block
 
-    def decode_message(c, private_key, public_key, block_size):
+    def decode_message(c, private_key, public_key, hash_verif, block_size):
 
         p = public_key['p']
         B1 = public_key['B1']
         B2 = public_key['B2']
         w = private_key['w']
+        x1 = private_key['x1']
+        x2 = private_key['x2']
+        y1 = private_key['y1']
+        y2 = private_key['y2']
+
+
+        chain_to_hash = bytearray()
+        chain_to_hash.extend(B1.to_bytes(((B1.bit_length()+7)//8), byteorder='big'))
+        chain_to_hash.extend(B2.to_bytes(((B2.bit_length()+7)//8), byteorder='big'))
+        chain_to_hash.extend(c)
+        beta_hash = hashlib.sha3_256(chain_to_hash).digest()
+
+        beta = int.from_bytes(beta_hash, byteorder='big')
+        to_check = (pow(B1, x1, p) * pow(B2, x2, p) * pow((pow(B1, y1, p) * pow(B2, y2, p)), beta, p))%p
+
+        if to_check == hash_verif:
+            pass
+        else:
+            raise ValueError('Hash not matching during verification check')
+
+        to_check_bytes = bytearray(to_check.to_bytes(((to_check.bit_length()+7)//8), byteorder='big'))
 
         uncyfered_text = bytearray()
 
@@ -494,12 +532,17 @@ if __name__ == '__main__':
             if len(data) > 0:
                 current_dict = json.loads(data)
                 current_dict['Uncyfered Text'] = (uncyfered_text.decode('utf-8'))
+                current_dict['check'] = str(to_check)
+                current_dict['check_bytes'] = str(to_check_bytes)
                 if block_num < len(list(current_dict['Uncyfered Block'].keys())):
                     for num_key in list(current_dict['Uncyfered Block'].keys()):
                         if int(num_key) > block_num:
                             del current_dict['Uncyfered Block'][num_key]
             else:
-                current_dict = {'Uncyfered Text': (uncyfered_text.decode('utf-8'))}
+                current_dict = {'Uncyfered Text': (uncyfered_text.decode('utf-8')),
+                                'check': str(to_check),
+                                'check_bytes': str(to_check_bytes)}
+
             cyferdatafile.seek(0)
             json.dump(current_dict,
                       cyferdatafile,indent=4, sort_keys=True)
@@ -533,12 +576,14 @@ if __name__ == '__main__':
             public_key = keys['Alice']['public key']
             cyfer = encode_message(message, public_key, block_len)
 
+
             with open('keys.json') as keydatafile:
                 keys = json.loads(keydatafile.read())
-                public_key['B1'] = keys['Bob']['B1']
-                public_key['B2'] = keys['Bob']['B2']
+                public_key['B1'] = cyfer['B1']
+                public_key['B2'] = cyfer['B2']
+                verif = int.from_bytes(cyfer['verif'], byteorder='big')
                 private_key = keys['Alice']['private key']
-                decyfer = decode_message(cyfer, private_key, public_key, block_len)
+                decyfer = decode_message(cyfer['cyfer'], private_key, public_key, verif, block_len)
 
 
 
