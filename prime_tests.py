@@ -483,7 +483,6 @@ if __name__ == '__main__':
 
     def decode_message(cyfer_packed, private_key, public_key, block_size):
 
-        print(cyfer_packed)
         p = public_key['p']
         w = private_key['w']
         x1 = private_key['x1']
