@@ -9,14 +9,7 @@ Created on Mon Nov 20 14:01:22 2017
 """
 TEST VALUES
 """
-key1 = bytearray(b'\x86\x69\xbb\xc5\x0d\xd3\xfc\x1c\x4b\x0a\xa3\xcc\x1f\x0b\x90\x3d\xac\xce\xc9\xa8\xec\xe3\xe5\xec\xcb\x2b\xea\xda\x34\xbb\x8d\x6c')
-tweaks = [None]*2
-tweaks[0] = bytearray(b'\xf1\x5c\x24\x4f\x22\xd1\xd2\x81')
-tweaks[1] = bytearray(b'\x60\x6c\x16\x69\x0a\xca\xf9\xc6')
 
-
-
-file = 'C:\\Users\\Arle\\Desktop\\GS15\\test.txt'
 
 from functools import reduce
 from collections import deque
@@ -175,7 +168,7 @@ def tournee_threefish_inv(M, N):# Tested and works
     
 
     
-def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
+def ECB_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
     N = block_len//64
     cutPlain = cut_as_words(plaintext)
     blockNumber = (len(cutPlain)*64)//block_len
@@ -200,7 +193,7 @@ def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks):
                 
     return(cyphertext)
 
-def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
+def ECB_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
     N = block_len//64
     cutCypher = cut_as_words(cyphertext)
     blockNumber = ((len(cutCypher)*64)//block_len)
@@ -219,8 +212,66 @@ def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks):
     
     return(plaintext)
 
+def CBC_ThreeFish_encrypt(plaintext, block_len, K, tweaks, IV):
+    N = block_len//64
+    cutPlain = cut_as_words(plaintext)
+    blockNumber = (len(cutPlain)*64)//block_len
+    cyphertext = [None]*blockNumber
+    IV = cut_as_words(IV)
+    for m in range(0,blockNumber):
+        cutBlock = cutPlain[N*m:N*(m+1)]
+        for i in range(0, N): cutBlock[i] = byte_xor(cutBlock[i], IV[i])
+        
+        for i in range(0,76):
+            if (i%4 == 0) or (i == 75):
+                k = key_generation(K, tweaks, N, i)
+                for j in range(0, N): cutBlock[j] = byte_xor(cutBlock[j], k[j])
+            cutBlock = tournee_threefish(cutBlock, N)
+        cyphertext[m] = cutBlock
+        IV = cutBlock[:]
+    if ((len(cutPlain)*64) % block_len) != 0:
+       cutBlock = cutPlain[N*blockNumber:] + (N-len(cutPlain[N*blockNumber:]))*[bytearray(b'\x00\x00\x00\x00\x00\x00\x00\x00')]
+       for i in range(0, N): cutBlock[i] = byte_xor(cutBlock[i], IV[i])
+       for i in range(0,76):
+            if (i%4 == 0) or (i == 75):
+                k = key_generation(K, tweaks, N, i)
+                for j in range(0, N): cutBlock[j] = byte_xor(cutBlock[j], k[j])
+            cutBlock = tournee_threefish(cutBlock, N)
+       cyphertext.append(cutBlock)
+        
+                
+    return(cyphertext)
+
+def CBC_ThreeFish_decrypt(cyphertext, block_len, K, tweaks, IV):
+    N = block_len//64
+    cutCypher = cut_as_words(cyphertext)
+    blockNumber = ((len(cutCypher)*64)//block_len)
+    plaintext = [None]*blockNumber
+    keys = [key_generation(K, tweaks, N, i) for i in range(0,76)]
+    IV = cut_as_words(IV)
+    for m in range(0,blockNumber):
+        cutBlock = cutCypher[N*m:N*(m+1)]
+       
+        for l in range(0,76):
+            i = 75 - l
+            cutBlock = tournee_threefish_inv(cutBlock, N)
+            if (i%4 == 0) or (i == 75):
+                k = keys[i]
+                for j in range(0, N): cutBlock[j] = byte_xor(cutBlock[j], k[j])
+                
+        for i in range(0, N): cutBlock[i] = byte_xor(cutBlock[i], IV[i])
+        plaintext[m] = cutBlock 
+        IV = cutCypher[N*m:N*(m+1)]
+    
+    return(plaintext)
+
 
 def test_chiffrement():
+    key1 = bytearray(b'\x86\x69\xbb\xc5\x0d\xd3\xfc\x1c\x4b\x0a\xa3\xcc\x1f\x0b\x90\x3d\xac\xce\xc9\xa8\xec\xe3\xe5\xec\xcb\x2b\xea\xda\x34\xbb\x8d\x6c')
+    tweaks = [None]*2
+    tweaks[0] = bytearray(b'\xf1\x5c\x24\x4f\x22\xd1\xd2\x81')
+    tweaks[1] = bytearray(b'\x60\x6c\x16\x69\x0a\xca\xf9\xc6')
+    file = 'C:\\Users\\Arle\\Desktop\\GS15\\test.txt'
     key2 = cut_as_words(key1)
     #plaintext = read_file_as_bits(file)
     #plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'

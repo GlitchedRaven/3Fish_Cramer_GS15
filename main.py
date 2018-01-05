@@ -28,21 +28,26 @@ def choix_chiffrement():
         if selection =='1': 
             import threefish as tf
             import skein
+            
+            mode=input("CBC (1) or EBC (2) ? : ") 
             mdp=input("Entrez une clé :")
             plain_path=input("Choisissez le fichier à chiffrer :")
             path_c = os.path.join(cwd, 'encrypted.txt')
             blockSize=int(input("Choisissez la taille des blocs (256,512,1024) :"))
             
-            hashedMdp = skein.simple_skein(1024, 1024, bytearray(m.encode()))
+            hashedMdp = skein.simple_skein(1024, 1024, bytearray(mdp.encode()))
             key = tf.cut_as_words(bytearray(hashedMdp[0:blockSize]))
             tweaks = [bytearray(hashedMdp[64:72]), bytearray(hashedMdp[72:80])]
             plaintext = tf.read_file_as_bits(os.path.join(cwd, plain_path))
             
+            if (mode == '1'):
+                IV = bytearray(b'\x86\x69\xbb\xc5\x0d\xd3\xfc\x1c\x4b\x0a\xa3\xcc\x1f\x0b\x90\x3d\xac\xce\xc9\xa8\xec\xe3\xe5\xec\xcb\x2b\xea\xda\x34\xbb\x8d\x6c')
+                c = list(chain.from_iterable(tf.CBC_ThreeFish_encrypt(plaintext, blockSize, key, tweaks, IV)))
+            if (mode == '2'):
+                c = list(chain.from_iterable(tf.ECB_ThreeFish_encrypt(plaintext, blockSize, key, tweaks)))
             
-            
-            
-            c = list(chain.from_iterable(tf.CBC_ThreeFish_encrypt(plaintext, blockSize, key, tweaks)))
             tf.write_file_from_bytes(c, path_c)
+            
             
         elif selection == '2': 
             print("delete")
@@ -63,20 +68,27 @@ def choix_chiffrement():
         elif selection == '4':
             import threefish as tf
             import skein
+            
+            mode=input("CBC (1) or EBC (2) ? : ") 
             mdp=input("Entrez la clé :")
             cypher_path=input("Choisissez le fichier à déchiffrer :")
             path_d = os.path.join(cwd, 'decrypted.txt')
             blockSize=int(input("Entrez la taille des blocs (256,512,1024) :"))
             
-            hashedMdp = skein.simple_skein(1024, 1024, bytearray(m.encode()))
+            hashedMdp = skein.simple_skein(1024, 1024, bytearray(mdp.encode()))
             key = tf.cut_as_words(bytearray(hashedMdp[0:blockSize]))
             tweaks = [bytearray(hashedMdp[64:72]), bytearray(hashedMdp[72:80])]
             plaintext = tf.read_file_as_bits(os.path.join(cwd, cypher_path))
             
+             
+            if (mode == '1'):
+                IV = bytearray(b'\x86\x69\xbb\xc5\x0d\xd3\xfc\x1c\x4b\x0a\xa3\xcc\x1f\x0b\x90\x3d\xac\xce\xc9\xa8\xec\xe3\xe5\xec\xcb\x2b\xea\xda\x34\xbb\x8d\x6c')
+                d = list(chain.from_iterable(tf.CBC_ThreeFish_decrypt(plaintext, blockSize, key, tweaks, IV)))           
+            if (mode == '2'):
+                d = list(chain.from_iterable(tf.ECB_ThreeFish_decrypt(plaintext, blockSize, key, tweaks)))
             
             
             
-            d = list(chain.from_iterable(tf.CBC_ThreeFish_decrypt(plaintext, blockSize, key, tweaks)))
             tf.write_file_from_bytes(d, path_d)
         elif selection == '5':
             break
