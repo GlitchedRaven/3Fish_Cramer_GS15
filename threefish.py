@@ -275,7 +275,7 @@ def test_chiffrement():
     key2 = cut_as_words(key1)
     #plaintext = read_file_as_bits(file)
     #plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-    plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x02'
+    #plaintext = b'\x00\x00\x00\x00\x00\x00\x00\x02'
     path_c = "test2.txt"
     path_dec = "test3.txt"
     c = list(chain.from_iterable(CBC_ThreeFish_encrypt(plaintext, 256, key2, tweaks)))

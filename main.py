@@ -7,6 +7,7 @@ Created on Wed Jan  3 14:57:33 2018
 
 from itertools import chain
 import os
+import threefish as tf
 cwd = os.getcwd()
 
 def choix_chiffrement():   
@@ -32,6 +33,7 @@ def choix_chiffrement():
             mode=input("CBC (1) or EBC (2) ? : ") 
             mdp=input("Entrez une clé :")
             plain_path=input("Choisissez le fichier à chiffrer :")
+
             path_c = os.path.join(cwd, 'encrypted.txt')
             blockSize=int(input("Choisissez la taille des blocs (256,512,1024) :"))
             
@@ -82,7 +84,8 @@ def choix_chiffrement():
             
              
             if (mode == '1'):
-                IV = bytearray(b'\x86\x69\xbb\xc5\x0d\xd3\xfc\x1c\x4b\x0a\xa3\xcc\x1f\x0b\x90\x3d\xac\xce\xc9\xa8\xec\xe3\xe5\xec\xcb\x2b\xea\xda\x34\xbb\x8d\x6c')
+                import time
+                IV = skein.simple_skein(N, N, bytearray(time.strftime("%Y-%m-%d %H:%M").encode()))
                 d = list(chain.from_iterable(tf.CBC_ThreeFish_decrypt(plaintext, blockSize, key, tweaks, IV)))           
             if (mode == '2'):
                 d = list(chain.from_iterable(tf.ECB_ThreeFish_decrypt(plaintext, blockSize, key, tweaks)))
@@ -96,7 +99,7 @@ def choix_chiffrement():
             import threefish as tf
             import skein
             hash_path=input("Choisissez le fichier contenant le hash :")
-            file_path=input("Choisissez le fichier avec lequel vosu souhaitez comparer ce hash :")
+            file_path=input("Choisissez le fichier avec lequel vous souhaitez comparer ce hash :")
             Nb=int(input("Choisissez la taille des blocs (256,512,1024) :"))
             No=int(input("Choisissez la taille du hash (256,512,1024) :"))
             plaintext = tf.read_file_as_bits(os.path.join(cwd, file_path))
@@ -115,4 +118,5 @@ def choix_chiffrement():
             print("Unknown Option Selected!")
 
 if __name__ == '__main__':
-    choix_chiffrement()
+    plaintext = tf.read_file_as_bits('test.txt')
+    #choix_chiffrement()
