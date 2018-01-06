@@ -66,8 +66,14 @@ def choix_chiffrement():
                 json.dump(param, f ,indent=4, sort_keys=True)
             
             
-        elif selection == '2': 
-            print("delete")
+        elif selection == '2':
+            import cramer_shoup as cs
+            file_path=input("Choisissez le fichier à chiffrer :")
+            block_len=int(input("Choisissez la taille des blocs (64,128,256,512,1024) :"))
+            # cs.Cramer_Shoup_encode(os.path.join(cwd, file_path), block_len)
+            cs.Cramer_Shoup_encode(file_path, block_len)
+
+
         elif selection == '3':
             import threefish as tf
             import skein
@@ -75,7 +81,6 @@ def choix_chiffrement():
             path_h = os.path.join(cwd, 'hash.txt')
             Nb=int(input("Choisissez la taille des blocs (256,512,1024) :"))
             No=int(input("Choisissez la taille du hash (256,512,1024) :"))
-            plaintext = tf.read_file_as_bits(os.path.join(cwd, file_path))
             
             h = skein.simple_skein(Nb, No, plaintext)
             
@@ -114,7 +119,10 @@ def choix_chiffrement():
             
             tf.write_file_from_bytes(d, path_d)
         elif selection == '5':
-            break
+            import cramer_shoup as cs
+            output_path = 'asym_decrypted.txt'
+            cs.Cramer_Shoup_decode(output_path)
+
         elif selection == '6':
             import threefish as tf
             import skein

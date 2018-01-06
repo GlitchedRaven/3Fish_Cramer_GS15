@@ -1,4 +1,5 @@
 
+import os
 import random
 from math import gcd
 from math import log
@@ -6,6 +7,7 @@ from math import floor
 
 def load_first_primes(path='fisrt_primes'):
     # loads the first prime integers from a file, to avoid generating them each time from a sieve
+    path = os.path.join(os.getcwd(), path)
     first_prime_file = open(path)
     first_primes = [int(s) for s in first_prime_file.read().split() if s.isdigit()]
     return first_primes
@@ -151,9 +153,9 @@ def Lucas_test(n):
     def lucas_sequence(n, u1, v1, u2, v2, d, q, m):
         k = q
         while m > 0:
-            u2 = (u2*v2)% n
-            v2 = (v2*v2-2*q)
-            q= (q*q)%n
+            u2 = u2*v2% n
+            v2 = v2*v2-2*q
+            q = (q*q)%n
             if m%2 ==0:
                 t1, t2 = u2 * v1, u1 * v2
                 t3, t4 = v2 * v1, u2 * u1 * d

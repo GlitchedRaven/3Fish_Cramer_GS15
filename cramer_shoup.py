@@ -5,6 +5,7 @@ Created on Tue Dec 12 10:29:07 2017
 @author: Arle, NervousK
 """
 
+import os
 import random
 import json
 import binascii
@@ -83,7 +84,7 @@ def generate_keys(length=8):
                      }
                 }
 
-    with open('keys.json', 'w') as keydatafile:
+    with open(os.path.join(os.getcwd(), 'keys.json'), 'w') as keydatafile:
         keydatafile.seek(0)
         json.dump(key_data, keydatafile,indent=4, sort_keys=True)
         keydatafile.truncate()
@@ -146,7 +147,7 @@ def encode_message(m, public_key, block_size):
 
     cyfered_packed_list = []
     block_num = 0
-    with open('cyfer.json', 'r+') as cyferdatafile:
+    with open(os.path.join(os.getcwd(), 'cyfer.json'), 'r+') as cyferdatafile:
         data = cyferdatafile.read()
         if len(data)>0:
             current_dict = json.loads(data)
@@ -238,7 +239,7 @@ def decode_message(cyfer_packed, private_key, public_key, block_size):
 
 
     block_num = 0
-    with open('cyfer.json', 'r+') as cyferdatafile:
+    with open(os.path.join(os.getcwd(), 'cyfer.json'), 'r+') as cyferdatafile:
         data = cyferdatafile.read()
         if len(data)>0:
             current_dict = json.loads(data)
@@ -278,7 +279,7 @@ def decode_message(cyfer_packed, private_key, public_key, block_size):
                   cyferdatafile,indent=4, sort_keys=True)
         cyferdatafile.truncate()
 
-    with open('cyfer.json', 'r+') as cyferdatafile:
+    with open(os.path.join(os.getcwd(), 'cyfer.json'), 'r+') as cyferdatafile:
         data = cyferdatafile.read()
         if len(data) > 0:
             current_dict = json.loads(data)
@@ -294,16 +295,13 @@ def decode_message(cyfer_packed, private_key, public_key, block_size):
     return uncyfered_text
 
 def Cramer_Shoup_encode(path, block_len=8):
-    with open(path, 'rb') as bin_file:
+    with open(os.path.join(os.getcwd(),path), 'rb') as bin_file:
         message = bin_file.read()
-        print(message)
-        print(str(bytes(bytearray(message))))
     if message is None:
         message = 'Hello World!! This is a default test string to be cyfered to check if everything works as expected!'
-    print()
     clear_text = bytearray(message)
     byte_text = bytearray(binascii.hexlify(bytes(clear_text)))
-    with open('cyfer.json', 'r+') as cyferdatafile:
+    with open(os.path.join(os.getcwd(), 'cyfer.json'), 'r+') as cyferdatafile:
         data = cyferdatafile.read()
         if len(data) > 0:
             current_dict = json.loads(data)
@@ -321,7 +319,7 @@ def Cramer_Shoup_encode(path, block_len=8):
 
     generate_keys(block_len)
 
-    with open('keys.json') as keydatafile:
+    with open(os.path.join(os.getcwd(), 'keys.json')) as keydatafile:
         keys = json.loads(keydatafile.read())
         public_key = keys['public key']
         cyfer_packed = encode_message(message, public_key, block_len)
@@ -333,15 +331,14 @@ def Cramer_Shoup_decode(path='asym_decrypted'):
     private_key = None
     block_len = None
     cyfer_packed = None
-    with open('keys.json') as keydatafile:
+    with open(os.path.join(os.getcwd(), 'keys.json')) as keydatafile:
         keys = json.loads(keydatafile.read())
         public_key = keys['public key']
         private_key = keys['private key']
-    with open('cyfer.json', 'r+') as cyferdatafile:
+    with open(os.path.join(os.getcwd(), 'cyfer.json'), 'r+') as cyferdatafile:
         data = cyferdatafile.read()
         if len(data) > 0:
             cyfer_data = json.loads(data)
-            print(cyfer_data)
             block_len = cyfer_data['Block length']
             cyfer_packed = cyfer_data['Cyfered Block']
 
@@ -349,7 +346,7 @@ def Cramer_Shoup_decode(path='asym_decrypted'):
 
         decyfer = decode_message(cyfer_packed, private_key, public_key, block_len)
 
-        with open(path, 'wb') as output_file:
+        with open(os.path.join(os.getcwd(),path), 'wb') as output_file:
             output_file.write(bytes(decyfer))
 
         return decyfer
@@ -357,7 +354,5 @@ def Cramer_Shoup_decode(path='asym_decrypted'):
 if __name__ == '__main__':
 
 
-
-    # test('STAR WARS VIII est nul a chier c est honteux bordel! Ils ont tue la saga, fuck mickey kugkurz gz hzrk hgzerk gherg zer gerz khgzerkg zer kgzerhg zerklg ezg ze gher ghlzeg75eztg ezthtzh3tzh36zte3h 6tze36 ', 128)
-    Cramer_Shoup_encode('test.txt', 128)
+    Cramer_Shoup_encode('test.txt', 512)
     Cramer_Shoup_decode('asym_decrypted.txt')
