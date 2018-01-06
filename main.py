@@ -6,8 +6,9 @@ Created on Wed Jan  3 14:57:33 2018
 """
 
 from itertools import chain
+import json
 import os
-import threefish as tf
+import ast
 cwd = os.getcwd()
 
 def choix_chiffrement():   
@@ -34,8 +35,10 @@ def choix_chiffrement():
             mdp=input("Entrez une clé :")
             plain_path=input("Choisissez le fichier à chiffrer :")
 
-            path_c = os.path.join(cwd, 'encrypted.txt')
+            path_c = os.path.join(cwd, 'encrypted.json')
             blockSize=int(input("Choisissez la taille des blocs (256,512,1024) :"))
+            
+            param= {'Mode': '', 'blockSize': str(blockSize), 'IV': '', 'cyphertext' : ''}
             
             hashedMdp = skein.simple_skein(1024, 1024, bytearray(mdp.encode()))
             key = tf.cut_as_words(bytearray(hashedMdp[0:blockSize]))
@@ -43,12 +46,23 @@ def choix_chiffrement():
             plaintext = tf.read_file_as_bits(os.path.join(cwd, plain_path))
             
             if (mode == '1'):
-                IV = bytearray(b'\x86\x69\xbb\xc5\x0d\xd3\xfc\x1c\x4b\x0a\xa3\xcc\x1f\x0b\x90\x3d\xac\xce\xc9\xa8\xec\xe3\xe5\xec\xcb\x2b\xea\xda\x34\xbb\x8d\x6c')
+                param['Mode'] = '1'
+                IV = 
+                param['IV'] = str(bytes(IV))
                 c = list(chain.from_iterable(tf.CBC_ThreeFish_encrypt(plaintext, blockSize, key, tweaks, IV)))
+                cyphertext =''
+                for block in c : cyphertext += str(bytes(block))
+                param['cyphertext'] = cyphertext
             if (mode == '2'):
+                param['Mode'] = '2'
                 c = list(chain.from_iterable(tf.ECB_ThreeFish_encrypt(plaintext, blockSize, key, tweaks)))
+                cyphertext =''
+                for block in c : cyphertext += str(bytes(block))
+                param['cyphertext'] = cyphertext
             
-            tf.write_file_from_bytes(c, path_c)
+            #tf.write_file_from_bytes(c, path_c)
+            with open(path_c, "w") as f:
+                json.dump(param, f ,indent=4, sort_keys=True)
             
             
         elif selection == '2': 
@@ -70,25 +84,28 @@ def choix_chiffrement():
         elif selection == '4':
             import threefish as tf
             import skein
-            
-            mode=input("CBC (1) or EBC (2) ? : ") 
             mdp=input("Entrez la clé :")
             cypher_path=input("Choisissez le fichier à déchiffrer :")
             path_d = os.path.join(cwd, 'decrypted.txt')
-            blockSize=int(input("Entrez la taille des blocs (256,512,1024) :"))
+            
+            with open(cypher_path, "r") as f:  param = json.loads(f.read())
+            blockSize = int(param['blockSize'])
+            cyphertext = ast.literal_eval(param['cyphertext'])
+            mode = param['Mode']
+            
             
             hashedMdp = skein.simple_skein(1024, 1024, bytearray(mdp.encode()))
             key = tf.cut_as_words(bytearray(hashedMdp[0:blockSize]))
             tweaks = [bytearray(hashedMdp[64:72]), bytearray(hashedMdp[72:80])]
-            plaintext = tf.read_file_as_bits(os.path.join(cwd, cypher_path))
+           
+            
             
              
             if (mode == '1'):
-                import time
-                IV = skein.simple_skein(N, N, bytearray(time.strftime("%Y-%m-%d %H:%M").encode()))
-                d = list(chain.from_iterable(tf.CBC_ThreeFish_decrypt(plaintext, blockSize, key, tweaks, IV)))           
+                IV = ast.literal_eval(param['IV'])
+                d = list(chain.from_iterable(tf.CBC_ThreeFish_decrypt( cyphertext, blockSize, key, tweaks, IV)))           
             if (mode == '2'):
-                d = list(chain.from_iterable(tf.ECB_ThreeFish_decrypt(plaintext, blockSize, key, tweaks)))
+                d = list(chain.from_iterable(tf.ECB_ThreeFish_decrypt( cyphertext, blockSize, key, tweaks)))
             
             
             
@@ -118,5 +135,5 @@ def choix_chiffrement():
             print("Unknown Option Selected!")
 
 if __name__ == '__main__':
-    plaintext = tf.read_file_as_bits('test.txt')
-    #choix_chiffrement()
+    #plaintext = tf.read_file_as_bits('test.txt')
+    choix_chiffrement()
