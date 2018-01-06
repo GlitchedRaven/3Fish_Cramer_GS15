@@ -52,7 +52,6 @@ def find_generator(p):
 
 
 def generate_keys(length=8):
-    length*=8
     p = pick_prime(length)
     alpha1 = find_generator(p)
     alpha2 = find_generator(p)
@@ -295,13 +294,13 @@ def decode_message(cyfer_packed, private_key, public_key, block_size):
     return uncyfered_text
 
 def Cramer_Shoup_encode(path, block_len=8):
-    with open(os.path.join(os.getcwd(),path), 'rb') as bin_file:
+    with open(os.path.join(os.getcwd(),path), 'r+b') as bin_file:
         message = bin_file.read()
     if message is None:
         message = 'Hello World!! This is a default test string to be cyfered to check if everything works as expected!'
     clear_text = bytearray(message)
     byte_text = bytearray(binascii.hexlify(bytes(clear_text)))
-    with open(os.path.join(os.getcwd(), 'cyfer.json'), 'r+') as cyferdatafile:
+    with open(os.path.join(os.getcwd(), 'cyfer.json'), 'w+') as cyferdatafile:
         data = cyferdatafile.read()
         if len(data) > 0:
             current_dict = json.loads(data)
