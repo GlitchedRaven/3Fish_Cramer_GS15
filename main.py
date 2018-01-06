@@ -9,6 +9,7 @@ from itertools import chain
 import json
 import os
 import ast
+import random
 cwd = os.getcwd()
 
 def choix_chiffrement():   
@@ -47,7 +48,7 @@ def choix_chiffrement():
             
             if (mode == '1'):
                 param['Mode'] = '1'
-                IV = 
+                IV = skein.simple_skein(blockSize, blockSize, random.randint(0, 2**2048).to_bytes(256, 'big'))
                 param['IV'] = str(bytes(IV))
                 c = list(chain.from_iterable(tf.CBC_ThreeFish_encrypt(plaintext, blockSize, key, tweaks, IV)))
                 cyphertext =''
@@ -78,9 +79,11 @@ def choix_chiffrement():
             
             h = skein.simple_skein(Nb, No, plaintext)
             
-            fo = open(path_h, "wb")
-            fo.write(h)
-            fo.close()
+            param= {'Nb': str(Nb), 'No': str(No), 'hash' : str(bytes(h))}
+            with open(path_h, "w") as f:
+                json.dump(param, f ,indent=4, sort_keys=True)
+
+
         elif selection == '4':
             import threefish as tf
             import skein
@@ -117,10 +120,13 @@ def choix_chiffrement():
             import skein
             hash_path=input("Choisissez le fichier contenant le hash :")
             file_path=input("Choisissez le fichier avec lequel vous souhaitez comparer ce hash :")
-            Nb=int(input("Choisissez la taille des blocs (256,512,1024) :"))
-            No=int(input("Choisissez la taille du hash (256,512,1024) :"))
+        
             plaintext = tf.read_file_as_bits(os.path.join(cwd, file_path))
-            hashfile =  tf.read_file_as_bits(os.path.join(cwd, hash_path))
+            
+            with open(hash_path, "r") as f:  param = json.loads(f.read())
+            Nb = int(param['Nb'])
+            No = int(param['No'])
+            hashfile = ast.literal_eval(param['hash'])
             
             h = skein.simple_skein(Nb, No, plaintext)
             
