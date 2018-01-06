@@ -52,6 +52,7 @@ def find_generator(p):
 
 
 def generate_keys(length=8):
+    length *= 8
     p = pick_prime(length)
     alpha1 = find_generator(p)
     alpha2 = find_generator(p)
@@ -353,5 +354,5 @@ def Cramer_Shoup_decode(path='asym_decrypted'):
 if __name__ == '__main__':
 
 
-    Cramer_Shoup_encode('test.txt', 512)
+    Cramer_Shoup_encode('test.txt', 64)
     Cramer_Shoup_decode('asym_decrypted.txt')

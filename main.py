@@ -69,7 +69,7 @@ def choix_chiffrement():
         elif selection == '2':
             import cramer_shoup as cs
             file_path=input("Choisissez le fichier à chiffrer :")
-            block_len=int(input("Choisissez la taille des blocs (64,128,256,512,1024) :"))
+            block_len=int(input("Choisissez la taille des blocs en bytes (8,16,32,64,128) :"))
             # cs.Cramer_Shoup_encode(os.path.join(cwd, file_path), block_len)
             cs.Cramer_Shoup_encode(file_path, block_len)
 
